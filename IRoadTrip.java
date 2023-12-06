@@ -13,10 +13,55 @@ public class IRoadTrip {
     private HashMap <String, HashMap<String, Integer>> borders;
     private HashMap <String, HashMap<String, Integer>> capdist;;
     private HashMap <String, String> state_name;
+    private HashMap<String, String> fixedCountries;
+    
+    public HashMap<String, String> createFixedCountries() {
+        HashMap<String, String> fixedCountries = new HashMap<String, String>();
+        fixedCountries.put("UK", "United Kingdom");
+        fixedCountries.put("Italy/Sardinia", "Italy");
+        fixedCountries.put("Korea, North", "North Korea");
+        fixedCountries.put("Korea, People's Republic of", "North Korea");
+        fixedCountries.put("Korea, South", "South Korea");
+        fixedCountries.put("Korea, Republic of", "South Korea");
+        fixedCountries.put("German Federal Republic", "Germany");
+        fixedCountries.put("Macedonia (Former Yugoslav Republic of)", "Macedonia");
+        fixedCountries.put("Bosnia-Herzegovina", "Bosnia and Herzegovina");
+        fixedCountries.put("Bahamas", "Bahamas, The");
+        fixedCountries.put("Zambia.", "Zambia");
+        fixedCountries.put("US", "United States of America");
+        fixedCountries.put("United States", "United States of America");
+        fixedCountries.put("Greenland).", "Greenland");
+        fixedCountries.put("Congo, Democratic Republic of (Zaire)", "Democratic Republic of the Congo");
+        fixedCountries.put("Congo, Democratic Republic of the", "Democratic Republic of the Congo");
+        fixedCountries.put("Congo, Republic of the", "Republic of the Congo");
+        fixedCountries.put("Gambia, The", "The Gambia");
+        fixedCountries.put("Gambia", "The Gambia");
+        fixedCountries.put("Macedonia", "North Macedonia");
+        fixedCountries.put("Macedonia (Former Yugoslav Republic of)", "North Macedonia");
+        fixedCountries.put("Italy.", "Italy");
+        fixedCountries.put("East Timor", "Timor-Leste");
+        fixedCountries.put("UAE", "United Arab Emirates");
+        fixedCountries.put("Turkey (Turkiye)", "Turkey");
+        fixedCountries.put("Botswana.", "Botswana");
+        fixedCountries.put("Myanmar (Burma)", "Burma");
+        fixedCountries.put("Vietnam, Democratic Republic of", "Vietnam");
+        fixedCountries.put("Cambodia (Kampuchea)", "Cambodia");
+        fixedCountries.put("Sri Lanka (Ceylon)", "Sri Lanka");
+        fixedCountries.put("Kyrgyz Republic", "Kyrgyzstan");
+        fixedCountries.put("Yemen (Arab Republic of Yemen)", "Yemen");
+        fixedCountries.put("Turkey (Ottoman Empire)", "Turkey");
+        fixedCountries.put("Iran (Persia)", "Iran");
+        fixedCountries.put("Zimbabwe (Rhodesia)", "Zimbabwe");
+        fixedCountries.put("Tanzania/Tanganyika", "Tanzania");
+        fixedCountries.put("Congo", "Republic of the Congo");
+        fixedCountries.put("Burkina Faso (Upper Volta)", "Burkina Faso");
+        fixedCountries.put("Belarus (Byelorussia)", "Belarus");
+        fixedCountries.put("Russia (Soviet Union)", "Russia");
+        return fixedCountries;
+    }
 
     public HashMap <String, HashMap<String, Integer>> readborders(String file) throws NumberFormatException{
         HashMap <String, HashMap<String, Integer>> borders = new HashMap<>();
-        HashMap <String, Integer> bordc = new HashMap<>();
         //https://www.javatpoint.com/how-to-read-file-line-by-line-in-java#:~:text=Using%20the%20Java%20BufferedRedaer%20class,a%20file%20line%20by%20line.
         //https://www.digitalocean.com/community/tutorials/java-read-file-line-by-line
         //https://www.baeldung.com/java-remove-punctuation-from-string
@@ -28,29 +73,40 @@ public class IRoadTrip {
                 String line = scanner.nextLine();
                 String[] arr = line.split(" = ");
                 String country = arr[0].trim();
+                HashMap <String, Integer> bordc = new HashMap<>();
+                //String countryName = country;
+                if (fixedCountries.containsKey(country)){
+                    country = fixedCountries.get(country);
+                }
                 if (arr.length > 1){
-                    String[] borderlen = arr[1].split("; ");
-                    for (String b : borderlen) {
-                        String cname = "";
-                        String len = "";
-                        for (int i = 0; i < b.length() - 2; i++){
+                    String[] borderCountries = arr[1].split("; ");
+                    for (String b : borderCountries) {
+                        String neighbor = "";
+                        String dist = "";
+                        for(int i = 0; i < b.length() - 2; i++){
                             //System.out.println(b + b.length());
                             //System.out.println(b.charAt(i));
                             if (Character.isDigit(b.charAt(i)) == true){
-                                len += b.charAt(i);
+                                dist += b.charAt(i);
                             }
                             else{
-                                cname += b.charAt(i);
+                                neighbor += b.charAt(i);
                             }
-                            //System.out.println(cname +": "+ dist);
+
+                            if (fixedCountries.containsKey(neighbor)){
+                                neighbor = fixedCountries.get(neighbor);
+                                //System.out.println(neighbor);
+                            }
 
                         }
-                        String c = cname.trim().replaceAll("[^\\sa-zA-Z0-9]","").trim();
-                        bordc.put(c, Integer.parseInt(len));
-                        //System.out.println(c +" "+ len);
+                        String c = neighbor.trim().replaceAll("[^\\sa-zA-Z0-9]","").trim();
+                        bordc.put(c, Integer.parseInt(dist));
+
+                        //System.out.println(c +" "+ dist);
                     }
                 }
                 borders.put(country, bordc);
+                //System.out.println(borders.get("Yemen"));
             }
             scanner.close();
         }
@@ -82,6 +138,7 @@ public class IRoadTrip {
                 else{
                    kmdistbtwcap.put(idb, kmdist);
                 }
+                //System.out.println(ida + " --> " + idb +"   "+ kmdist);
                 capdist.put(ida, kmdistbtwcap);
                 //System.out.println(kmdist);
                 //System.out.println(ida+": "+kmdistbtwcap);
@@ -105,9 +162,18 @@ public class IRoadTrip {
                 line = scanner.nextLine();
                 String[] arr = line.split("\t");
                 String stateid = arr[1].trim();
-                String cid = arr[2].trim();
-                state_name.put(stateid, cid);
-                //System.out.println(stateid+": "+cid);
+                String country = arr[2].trim();
+                String date = arr[4].trim();
+                //System.out.println(country);
+                String countryName = country;
+                if(date.indexOf("2020") != -1){
+                    if (fixedCountries.containsKey(country)){
+                        countryName = fixedCountries.get(country);
+                        //System.out.println(countryName);
+                    }
+                    state_name.put(stateid, country);
+                    //System.out.println(stateid+": "+country);
+                }
             }
 
             scanner.close();
@@ -123,77 +189,77 @@ public class IRoadTrip {
         if (args.length < 3){
             System.out.println("Not enough files");
         }
+        fixedCountries = createFixedCountries();
+        //System.out.println(fixedCountries);
         borders = readborders(args[0]);
-        System.out.println(borders);
+        //System.out.println(borders);
         capdist = readcap(args[1]);
-        System.out.println(capdist);
+        //System.out.println(capdist);
         state_name = readstate_name(args[2]);
-        System.out.println(state_name);
+        //System.out.println(state_name);
+        fixedCountries = createFixedCountries();
+        //System.out.println(fixedCountries);
 
     }
 
 
     public int getDistance (String country1, String country2) {
-        if (borders == null || capdist == null || state_name == null) {
-            System.out.println("HashMaps are null");
-            return -1;
-        }
-        List<String> path = findPath(country1, country2);
-        int totalDistance = 0;
+        HashMap<String, Integer> bordersCountry1 = borders.get(country1);
+        System.out.println(bordersCountry1);
 
-        for (int i = 0; i < path.size() - 1; i++) {
-            String current = path.get(i);
-            String next = path.get(i + 1);
-            Map<String, Integer> neighbordists = borders.get(current);
-
-            if (neighbordists.containsKey(next)) {
-                totalDistance += neighbordists.get(next);
-            } else {
-                return -1;
-            }
-        }
-        return totalDistance;
+        return capdist.get(state_name.get(country1)).get(state_name.get(country2));
     }
 
 
     public List<String> findPath (String country1, String country2) {
-        if (!borders.containsKey(country1) || !borders.containsKey(country2)) {
-            return new ArrayList<>(); 
-        }
-        HashMap<String, Integer> dists = new HashMap<>();
-        HashMap<String, String> previous = new HashMap<>();
-        PriorityQueue<String> pq = new PriorityQueue<>(Comparator.comparingInt(dists::get));
+    List<String> path = new ArrayList<>();
+    //System.out.println(borders.get(country1));
 
-        for (String country : borders.keySet()) {
-            dists.put(country, country.equals(country1) ? 0 : Integer.MAX_VALUE);
-            previous.put(country, null);
-            pq.offer(country);
-        }
+    HashMap<String, Integer> bordersCountry1 = borders.get(country1);
 
-        while (!pq.isEmpty()) {
-            String current = pq.poll();
-            if (current.equals(country2)) {
-                break;
+    if (!bordersCountry1.containsKey(country2)) {
+        return path;
+    }
+    PriorityQueue<String> queue = new PriorityQueue<>(Comparator.comparingInt(border -> bordersCountry1.get(border)));
+    HashMap<String, Integer> distances = new HashMap<>();
+    HashMap<String, String> previous = new HashMap<>();
+
+    for (String border : borders.keySet()) {
+        if (border.equals(country1)) {
+            distances.put(border, 0);
+        } 
+        else {
+            distances.put(border, Integer.MAX_VALUE);
+        }
+        queue.add(border);
+    }
+
+    while (!queue.isEmpty()) {
+        String currentCountry = queue.poll();
+
+        if (currentCountry.equals(country2)) {
+            // Reconstruct path
+            while (previous.containsKey(currentCountry)) {
+                path.add(0, currentCountry + " --> " + previous.get(currentCountry) +
+                        " (" + borders.get(currentCountry).get(previous.get(currentCountry)) + " km)");
+                currentCountry = previous.get(currentCountry);
             }
+            path.add(0, country1);
+            break;
+        }
 
-            HashMap<String, Integer> neighbors = borders.get(current);
-            for (String neighbor : neighbors.keySet()) {
-                int newDistance = dists.get(current) + neighbors.get(neighbor);
-                if (newDistance < dists.get(neighbor)) {
-                    dists.put(neighbor, newDistance);
-                    previous.put(neighbor, current);
-                    pq.offer(neighbor);
-                }
+        for (String neighbor : borders.get(currentCountry).keySet()) {
+            int alt = distances.get(currentCountry) + borders.get(currentCountry).get(neighbor);
+            if (alt < distances.get(neighbor)) {
+                distances.put(neighbor, alt);
+                previous.put(neighbor, currentCountry);
+                queue.remove(neighbor);
+                queue.add(neighbor);
             }
         }
-        List<String> shortestPath = new ArrayList<>();
-        String current = country2;
-        while (current != null) {
-            shortestPath.add(0, current);
-            current = previous.get(current);
-        }
+    }
 
-        return shortestPath.size() > 1 ? shortestPath : new ArrayList<>();
+    return path;
     }
 
 
@@ -201,18 +267,31 @@ public class IRoadTrip {
         // Replace with your code
         //System.out.println("IRoadTrip - skeleton");
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Enter the name of the first country (type EXIT to quit): ");
-        String c1 = scanner.nextLine();
-
+        System.out.print("Enter the name of the first country (type EXIT to quit): ");
+        String c1 = scanner.nextLine().trim();
         if (c1.equals("EXIT")){
             System.exit(0);
         }
-        System.out.println("Enter the name of the second country (type EXIT to quit): ");
-        String c2 = scanner.nextLine();
+        else if (!borders.containsKey(c1)) {
+            System.out.println("Invalid country name. Please enter a valid country name.");
+            acceptUserInput();
+        }
+
+        System.out.print("Enter the name of the second country (type EXIT to quit): ");
+        String c2 = scanner.nextLine().trim();
+
+        if (c2.equals("EXIT")){
+            System.exit(0);
+        }
+        else if (!borders.containsKey(c2)) {
+            System.out.println("Invalid country name. Please enter a valid country name.");
+            acceptUserInput();
+        }
+
 
         //findPath(c1,c2);
         //getDistance(c1, c2);
-        System.out.println(findPath(c1,c2) + ": " + getDistance(c1,c2));
+        System.out.println(findPath(c1,c2) + ": (" + getDistance(c1,c2) + ")");
         acceptUserInput();
         scanner.close();
         
