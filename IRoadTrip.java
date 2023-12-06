@@ -10,13 +10,13 @@ import java.io.FileNotFoundException;
 
 public class IRoadTrip {
     //https://howtodoinjava.com/java/collections/hashmap/java-nested-map/
-    public Map <String, Map<String, Integer>> borders;
-    public Map <String, Map<String, Integer>> capdist;;
-    public Map <String, String> state_name;
+    private HashMap <String, HashMap<String, Integer>> borders;
+    private HashMap <String, HashMap<String, Integer>> capdist;;
+    private HashMap <String, String> state_name;
 
-    public static Map<String, Map<String, Integer>> readborders(String file) throws NumberFormatException{
-        Map <String, Map<String, Integer>> borders = new HashMap<>();
-        Map <String, Integer> bordc = new HashMap<>();
+    public HashMap <String, HashMap<String, Integer>> readborders(String file) throws NumberFormatException{
+        HashMap <String, HashMap<String, Integer>> borders = new HashMap<>();
+        HashMap <String, Integer> bordc = new HashMap<>();
         //https://www.javatpoint.com/how-to-read-file-line-by-line-in-java#:~:text=Using%20the%20Java%20BufferedRedaer%20class,a%20file%20line%20by%20line.
         //https://www.digitalocean.com/community/tutorials/java-read-file-line-by-line
         //https://www.baeldung.com/java-remove-punctuation-from-string
@@ -60,9 +60,9 @@ public class IRoadTrip {
         }
         return borders;
     }
-    public static Map<String, Map<String, Integer>> readcap(String file){
-        Map <String, Map<String, Integer>> capdist = new HashMap<>();
-        Map <String, Integer> kmdistbtwcap = new HashMap<>();
+    public HashMap <String, HashMap<String, Integer>> readcap(String file){
+        HashMap <String, HashMap<String, Integer>> capdist = new HashMap<>();
+        HashMap <String, Integer> kmdistbtwcap = new HashMap<>();
         //https://www.javatpoint.com/how-to-read-file-line-by-line-in-java#:~:text=Using%20the%20Java%20BufferedRedaer%20class,a%20file%20line%20by%20line.
         //https://www.digitalocean.com/community/tutorials/java-read-file-line-by-line
         try {
@@ -81,8 +81,8 @@ public class IRoadTrip {
                 }
                 else{
                    kmdistbtwcap.put(idb, kmdist);
-                   capdist.put(ida, kmdistbtwcap);
                 }
+                capdist.put(ida, kmdistbtwcap);
                 //System.out.println(kmdist);
                 //System.out.println(ida+": "+kmdistbtwcap);
                 //System.out.println(kmdistbtwcap.size());
@@ -96,8 +96,8 @@ public class IRoadTrip {
         }
         return capdist;
     }
-    public static Map<String, String> readstate_name(String file){
-        Map <String, String> state_name = new HashMap<>();
+    public HashMap <String, String> readstate_name(String file){
+        HashMap <String, String> state_name = new HashMap<>();
         try {
             Scanner scanner = new Scanner(new File(file));
             String line = scanner.nextLine();
@@ -119,25 +119,85 @@ public class IRoadTrip {
         return state_name;
     }
 
-    public IRoadTrip (String [] args) {
-        // Replace with your code
+    public IRoadTrip (String[] args) {
+        if (args.length < 3){
+            System.out.println("Not enough files");
+        }
+        borders = readborders(args[0]);
+        System.out.println(borders);
+        capdist = readcap(args[1]);
+        System.out.println(capdist);
+        state_name = readstate_name(args[2]);
+        System.out.println(state_name);
 
     }
 
 
     public int getDistance (String country1, String country2) {
-        // Replace with your code
-        return -1;
+        if (borders == null || capdist == null || state_name == null) {
+            System.out.println("HashMaps are null");
+            return -1;
+        }
+        List<String> path = findPath(country1, country2);
+        int totalDistance = 0;
+
+        for (int i = 0; i < path.size() - 1; i++) {
+            String current = path.get(i);
+            String next = path.get(i + 1);
+            Map<String, Integer> neighbordists = borders.get(current);
+
+            if (neighbordists.containsKey(next)) {
+                totalDistance += neighbordists.get(next);
+            } else {
+                return -1;
+            }
+        }
+        return totalDistance;
     }
 
 
     public List<String> findPath (String country1, String country2) {
-        // Replace with your code
-        return null;
+        if (!borders.containsKey(country1) || !borders.containsKey(country2)) {
+            return new ArrayList<>(); 
+        }
+        HashMap<String, Integer> dists = new HashMap<>();
+        HashMap<String, String> previous = new HashMap<>();
+        PriorityQueue<String> pq = new PriorityQueue<>(Comparator.comparingInt(dists::get));
+
+        for (String country : borders.keySet()) {
+            dists.put(country, country.equals(country1) ? 0 : Integer.MAX_VALUE);
+            previous.put(country, null);
+            pq.offer(country);
+        }
+
+        while (!pq.isEmpty()) {
+            String current = pq.poll();
+            if (current.equals(country2)) {
+                break;
+            }
+
+            HashMap<String, Integer> neighbors = borders.get(current);
+            for (String neighbor : neighbors.keySet()) {
+                int newDistance = dists.get(current) + neighbors.get(neighbor);
+                if (newDistance < dists.get(neighbor)) {
+                    dists.put(neighbor, newDistance);
+                    previous.put(neighbor, current);
+                    pq.offer(neighbor);
+                }
+            }
+        }
+        List<String> shortestPath = new ArrayList<>();
+        String current = country2;
+        while (current != null) {
+            shortestPath.add(0, current);
+            current = previous.get(current);
+        }
+
+        return shortestPath.size() > 1 ? shortestPath : new ArrayList<>();
     }
 
 
-    public static void acceptUserInput() {
+    public void acceptUserInput() {
         // Replace with your code
         //System.out.println("IRoadTrip - skeleton");
         Scanner scanner = new Scanner(System.in);
@@ -152,21 +212,16 @@ public class IRoadTrip {
 
         //findPath(c1,c2);
         //getDistance(c1, c2);
-        scanner.close();
+        System.out.println(findPath(c1,c2) + ": " + getDistance(c1,c2));
         acceptUserInput();
+        scanner.close();
+        
     }
 
 
     public static void main(String[] args) {
-        //IRoadTrip a3 = new IRoadTrip(args);
-        if (args.length < 3){
-            System.out.println("Not enough files");
-        }
-        readborders(args[0]);
-        readcap(args[1]);
-        readstate_name(args[2]);
-
-        //acceptUserInput();
+        IRoadTrip a3 = new IRoadTrip(args);
+        a3.acceptUserInput();
     }
 
 }
