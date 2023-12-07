@@ -1,3 +1,4 @@
+//Smrithi Panuganti CS 245
 import java.util.List;
 import java.util.Scanner;
 import java.util.*;
@@ -8,12 +9,99 @@ import java.io.IOException;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+//https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-in-java-using-priorityqueue/
+//https://www.softwaretestinghelp.com/dijkstras-algorithm-in-java/
+class Graph {
+    private HashMap<String, HashMap<String, Integer>> adjacencyList;
+
+    public Graph() {
+        adjacencyList = new HashMap<>();
+    }
+
+    public void addVertex(String vertex) {
+        adjacencyList.put(vertex, new HashMap<>());
+    }
+
+    public void addWeightedEdge(String src, String dest, int weight) {
+        if (!adjacencyList.containsKey(src)) {
+            addVertex(src);
+        }
+        if (!adjacencyList.containsKey(dest)) {
+            addVertex(dest);
+        }
+        adjacencyList.get(src).put(dest, weight);
+        adjacencyList.get(dest).put(src, weight);
+    }
+
+    public HashMap<String, Integer> getNeighbors(String vertex) {
+        return adjacencyList.getOrDefault(vertex, new HashMap<>());
+    }
+
+    public List<String> findPath(String startVertex, String endVertex) {
+        HashMap<String, Integer> distances = new HashMap<>();
+        HashMap<String, String> previous = new HashMap<>();
+        PriorityQueue<String> queue = new PriorityQueue<>(Comparator.comparingInt(distances::get));
+        HashSet<String> visited = new HashSet<>();
+        List<String> path = new ArrayList<>();
+        HashMap<String, Integer> edgeDistances = new HashMap<>();
+
+        for (String country : adjacencyList.keySet()) {
+            distances.put(country, Integer.MAX_VALUE);
+            previous.put(country, null);
+        }
+
+        distances.put(startVertex, 0);
+        queue.add(startVertex);
+
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+
+            if (current.equals(endVertex)) {
+                String temp = endVertex;
+                while (previous.get(temp) != null) {
+                    path.add(0, temp);
+                    temp = previous.get(temp);
+                }
+                path.add(0, startVertex);
+                for (int i = 0; i < path.size() - 1; i++) {
+                    String country1 = path.get(i);
+                    String country2 = path.get(i + 1);
+                    int distance = adjacencyList.get(country1).get(country2);
+                    edgeDistances.put(country1 + " --> " + country2, distance);
+                }
+                break;
+            }
+
+            if (!visited.contains(current)) {
+                visited.add(current);
+
+                for (Map.Entry<String, Integer> neighbor : adjacencyList.get(current).entrySet()) {
+                    String neighborCountry = neighbor.getKey();
+                    int distanceToNeighbor = neighbor.getValue();
+
+                    if (!visited.contains(neighborCountry)) {
+                        int newDistance = distances.get(current) + distanceToNeighbor;
+
+                        if (newDistance < distances.get(neighborCountry)) {
+                            distances.put(neighborCountry, newDistance);
+                            previous.put(neighborCountry, current);
+                            queue.add(neighborCountry);
+                        }
+                    }
+                }
+            }
+        }
+        return path;
+    }
+
+}
 public class IRoadTrip {
     //https://howtodoinjava.com/java/collections/hashmap/java-nested-map/
     private HashMap <String, HashMap<String, Integer>> borders;
     private HashMap <String, HashMap<String, Integer>> capdist;;
     private HashMap <String, String> state_name;
     private HashMap<String, String> fixedCountries;
+    private Graph roadTripGraph;
     
     public HashMap<String, String> createFixedCountries() {
         HashMap<String, String> fixedCountries = new HashMap<String, String>();
@@ -101,6 +189,7 @@ public class IRoadTrip {
 
                     }
                     borders.put(country, bordc);
+
                 }
 
             }
@@ -108,7 +197,7 @@ public class IRoadTrip {
         }
         catch (FileNotFoundException e){
             System.out.println("File does not exist");
-            e.printStackTrace();
+            System.exit(0);
         }
         return borders;
     }
@@ -139,7 +228,7 @@ public class IRoadTrip {
         }
         catch (Exception e){
             System.out.println("File does not exist");
-            e.printStackTrace();
+            System.exit(0);
         }
         return capdist;
     }
@@ -170,7 +259,7 @@ public class IRoadTrip {
         }
         catch (Exception e){
             System.out.println("File does not exist");
-            e.printStackTrace();
+            System.exit(0);
         }
         return state_name;
     }
@@ -184,140 +273,94 @@ public class IRoadTrip {
         capdist = readcap(args[1]);
         state_name = readstate_name(args[2]);
         fixedCountries = createFixedCountries();
+
+        roadTripGraph = createGraphFromBordersAndCapDist();
     }
 
 
     public int getDistance (String country1, String country2) {
-        HashMap<String, Integer> distances = new HashMap<>();
+        HashMap<String, Integer> distances = capdist.get(state_name.get(country1));
         PriorityQueue<String> queue = new PriorityQueue<>(Comparator.comparingInt(distances::get));
         HashSet<String> visited = new HashSet<>();
-
-        for (String country : borders.keySet()) {
-            distances.put(country, Integer.MAX_VALUE);
-        }
-
-        distances.put(country1, 0);
+        distances.put(state_name.get(country1), 0);
         queue.add(country1);
+
+        int newDistance = -1;
 
         while (!queue.isEmpty()) {
             String current = queue.poll();
+            newDistance = distances.get(state_name.get(country2));
 
-            if (current.equals(country2)) {
+            if (current.equals(state_name.get(country2))) {
+                System.out.println(distances.get(country2));
                 return distances.get(country2);
             }
+        }
+        return newDistance;
+    }
+    public Graph createGraphFromBordersAndCapDist() {
+        Graph graph = new Graph();
 
-            if (!visited.contains(current)) {
-                visited.add(current);
+        for (Map.Entry<String, HashMap<String, Integer>> entry : borders.entrySet()) {
+            String country = entry.getKey();
+            graph.addVertex(country);
 
-                for (Map.Entry<String, Integer> neighbor : borders.get(current).entrySet()) {
-                    String neighborCountry = neighbor.getKey();
-                    int distanceToNeighbor = neighbor.getValue();
+            HashMap<String, Integer> borderingCountries = entry.getValue();
+            for (Map.Entry<String, Integer> neighbor : borderingCountries.entrySet()) {
+                String neighborCountry = neighbor.getKey();
+                int weight = neighbor.getValue();
 
-                    if (!visited.contains(neighborCountry)) {
-                        int newDistance = distances.get(current) + distanceToNeighbor;
+                if (capdist.containsKey(state_name.get(country)) && capdist.get(state_name.get(country)).containsKey(state_name.get(neighborCountry))) {
 
-                        if (newDistance < distances.get(neighborCountry)) {
-                            distances.put(neighborCountry, newDistance);
-                            queue.add(neighborCountry);
-                        }
-                    }
+                    weight = capdist.get(state_name.get(country)).get(state_name.get(neighborCountry));
                 }
+
+                graph.addWeightedEdge(country, neighborCountry, weight);
             }
         }
-        return -1;
+        return graph;
     }
 
-
-    public List<String> findPath (String country1, String country2) {
-        HashMap<String, Integer> distances = new HashMap<>();
-        HashMap<String, String> previous = new HashMap<>();
-        //https://www.geeksforgeeks.org/implement-priorityqueue-comparator-java/
-        //https://www.geeksforgeeks.org/comparator-interface-java/
-        PriorityQueue<String> queue = new PriorityQueue<>(Comparator.comparingInt(distances::get));
-        HashSet<String> visited = new HashSet<>();
-        List<String> path = new ArrayList<>();
-
-        //https://www.educative.io/answers/what-is-integermaxvalue
-        //https://www.geeksforgeeks.org/integer-max_value-and-integer-min_value-in-java-with-examples/
-
-        for (String country : borders.keySet()) {
-            distances.put(country, Integer.MAX_VALUE);
-            previous.put(country, null);
-        }
-
-        distances.put(country1, 0);
-        queue.add(country1);
-
-        while (!queue.isEmpty()) {
-            String current = queue.poll();
-
-            if (current.equals(country2)) {
-                String temp = country2;
-                while (previous.get(temp) != null) {
-                    path.add(0, temp);
-                    temp = previous.get(temp);
-                }
-                path.add(0, country1);
-                break;
-            }
-
-            if (!visited.contains(current)) {
-                visited.add(current);
-
-                for (Map.Entry<String, Integer> neighbor : borders.get(current).entrySet()) {
-                    String neighborCountry = neighbor.getKey();
-                    int distanceToNeighbor = neighbor.getValue();
-
-                    if (!visited.contains(neighborCountry)) {
-                        int newDistance = distances.get(current) + distanceToNeighbor;
-
-                        if (newDistance < distances.get(neighborCountry)) {
-                            distances.put(neighborCountry, newDistance);
-                            previous.put(neighborCountry, current);
-                            queue.add(neighborCountry);
-                        }
-                    }
-                }
-            }
-        }
-        return path;
-    }
 
     public void acceptUserInput() {
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter the name of the first country (type EXIT to quit): ");
-        String c1 = scanner.nextLine().trim();
-        if (c1.equals("EXIT")){
-            System.exit(0);
-        }
-        else if (!borders.containsKey(c1)) {
-            System.out.println("Invalid country name. Please enter a valid country name.");
-            acceptUserInput();
+        while (true){
+            System.out.print("Enter the name of the first country (type EXIT to quit): ");
+            String c1 = scanner.nextLine().trim();
+            if (c1.equals("EXIT")){
+                scanner.close();
+                System.exit(0);
+            }
+            else if (!borders.containsKey(c1)) {
+                System.out.println("Invalid country name. Please enter a valid country name.");
+                acceptUserInput();
+            }
+
+            System.out.print("Enter the name of the second country (type EXIT to quit): ");
+            String c2 = scanner.nextLine().trim();
+
+            if (c2.equals("EXIT")){
+                scanner.close();
+                System.exit(0);
+            }
+            else if (!borders.containsKey(c2)) {
+                System.out.println("Invalid country name. Please enter a valid country name.");
+                acceptUserInput();
+            }
+            List<String> path = roadTripGraph.findPath(c1, c2);
+            int dist = 0;
+            int totaldist = 0;
+            for (int i = 0; i < path.size() - 1; i++){
+                dist = getDistance(path.get(i), path.get(i + 1));
+                System.out.println("* " + path.get(i) + " --> " + path.get(i + 1) + " (" + dist + " km.)");
+            }
         }
 
-        System.out.print("Enter the name of the second country (type EXIT to quit): ");
-        String c2 = scanner.nextLine().trim();
-
-        if (c2.equals("EXIT")){
-            System.exit(0);
-        }
-        else if (!borders.containsKey(c2)) {
-            System.out.println("Invalid country name. Please enter a valid country name.");
-            acceptUserInput();
-        }
-        System.out.println("Route from " + c1 + " to " + c2 + ":");
-        List<String> path = findPath(c1,c2);
-        int dist = 0;
-        for (int i = 0; i < path.size() - 1; i++){
-            dist += getDistance(path.get(i), path.get(i + 1));
-            System.out.println("* " + path.get(i) + " --> " + path.get(i + 1) + " (" + dist + " km.)");
-        }
-        acceptUserInput();
-        scanner.close();
         
     }
     public static void main(String[] args) {
         IRoadTrip a3 = new IRoadTrip(args);
+        Graph roadTripGraph = a3.createGraphFromBordersAndCapDist();
         a3.acceptUserInput();
     }
 
